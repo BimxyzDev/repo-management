@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Repository Manager</title>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>GitHub Repository Manager</h1>
+                <p class="header-subtitle">Manage your GitHub repositories directly from your browser</p>
+            </div>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <!-- Add Repository Section -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Add Repository</span>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-key"></i>
+                            GitHub Token
+                        </label>
+                        <div class="token-group">
+                            <input type="password" class="form-input" id="token" placeholder="ghp_xxxxxxxxxxxx">
+                            <button class="token-toggle" onclick="toggleTokenVisibility()">
+                                <i class="far fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-user"></i>
+                            Owner / Username
+                        </label>
+                        <input type="text" class="form-input" id="owner" placeholder="octocat">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">
+                            <i class="fas fa-book"></i>
+                            Repository Name
+                        </label>
+                        <input type="text" class="form-input" id="repo" placeholder="hello-world">
+                    </div>
+                    
+                    <button class="btn btn-primary btn-block" onclick="addRepository()">
+                        <i class="fas fa-save"></i>
+                        Add Repository
+                    </button>
+                </div>
+
+                <!-- Saved Repositories -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <i class="fas fa-database"></i>
+                        <span>Your Repositories</span>
+                    </div>
+                    
+                    <ul class="repo-list" id="repoList"></ul>
+                    
+                    <div class="repo-actions-group">
+                        <button class="btn btn-sm" onclick="clearAllRepos()">
+                            <i class="fas fa-trash-alt"></i>
+                            Clear All
+                        </button>
+                        <button class="btn btn-sm" onclick="exportRepos()">
+                            <i class="fas fa-download"></i>
+                            Export
+                        </button>
+                        <button class="btn btn-sm" onclick="importRepos()">
+                            <i class="fas fa-upload"></i>
+                            Import
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Quick Stats</span>
+                    </div>
+                    
+                    <div id="quickStats">
+                        <div class="stats-card">
+                            <div class="stat-item">
+                                <span class="stat-label">
+                                    <i class="fas fa-box"></i>
+                                    Total Repositories
+                                </span>
+                                <span class="stat-value" id="statTotalRepos">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">
+                                    <i class="fas fa-folder-open"></i>
+                                    Active Repository
+                                </span>
+                                <span class="stat-value" id="statActiveRepo">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">
+                                    <i class="fas fa-folder"></i>
+                                    Current Folder
+                                </span>
+                                <span class="stat-value" id="statCurrentFolder">/</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content" id="mainContent" style="display: none;">
+                <!-- Content Header -->
+                <div class="content-header">
+                    <div class="repo-info">
+                        <h2 id="currentRepoDisplay"></h2>
+                        <p id="currentRepoPath">
+                            <i class="fas fa-folder-open"></i>
+                            <span></span>
+                        </p>
+                    </div>
+                    
+                    <button class="btn btn-sm" onclick="refreshContents()">
+                        <i class="fas fa-sync-alt"></i>
+                        Refresh
+                    </button>
+                </div>
+
+                <!-- Breadcrumb -->
+                <div class="breadcrumb" id="breadcrumb"></div>
+
+                <!-- Action Bar -->
+                <div class="action-bar">
+                    <button class="btn btn-sm" onclick="showCreateFileModal()">
+                        <i class="fas fa-file"></i>
+                        New File
+                    </button>
+                    
+                    <button class="btn btn-sm" onclick="showCreateFolderModal()">
+                        <i class="fas fa-folder"></i>
+                        New Folder
+                    </button>
+                    
+                    <button class="btn btn-sm btn-success" onclick="showUploadModal()">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Upload Files
+                    </button>
+                    
+                    <div class="view-toggle">
+                        <button class="active" onclick="setViewMode('grid')" id="viewGridBtn">
+                            <i class="fas fa-th-large"></i>
+                            Grid
+                        </button>
+                        <button onclick="setViewMode('table')" id="viewTableBtn">
+                            <i class="fas fa-table"></i>
+                            Table
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Files Container -->
+                <div id="filesContainer"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Create File Modal -->
+    <div class="modal" id="createFileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-file"></i>
+                    Create New File
+                </h3>
+                <button class="modal-close" onclick="closeModal('createFileModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">File Name</label>
+                <input type="text" class="form-input" id="newFileName" placeholder="example.txt">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Content</label>
+                <textarea class="form-input" id="newFileContent" rows="8"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Commit Message</label>
+                <input type="text" class="form-input" id="createFileCommitMessage" value="Create new file">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('createFileModal')">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-primary" onclick="createFile()">
+                    <i class="fas fa-check"></i>
+                    Create File
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit File Modal -->
+    <div class="modal" id="editFileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-edit"></i>
+                    Edit File
+                </h3>
+                <button class="modal-close" onclick="closeModal('editFileModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="info-note" id="editFilePath"></div>
+            
+            <div class="form-group">
+                <label class="form-label">Content</label>
+                <textarea class="form-input" id="editFileContent" rows="12"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Commit Message</label>
+                <input type="text" class="form-input" id="editCommitMessage" value="Update file">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('editFileModal')">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-primary" onclick="saveFile()">
+                    <i class="fas fa-save"></i>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div class="modal" id="createFolderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-folder"></i>
+                    Create New Folder
+                </h3>
+                <button class="modal-close" onclick="closeModal('createFolderModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="info-note">
+                <i class="fas fa-info-circle"></i>
+                A .gitkeep file will be created to maintain the folder structure
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Folder Name</label>
+                <input type="text" class="form-input" id="newFolderName" placeholder="new-folder">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Commit Message</label>
+                <input type="text" class="form-input" id="createFolderCommitMessage" value="Create new folder">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('createFolderModal')">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-primary" onclick="createFolder()">
+                    <i class="fas fa-check"></i>
+                    Create Folder
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Modal -->
+    <div class="modal" id="renameModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-tag"></i>
+                    Rename
+                </h3>
+                <button class="modal-close" onclick="closeModal('renameModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">New Name</label>
+                <input type="text" class="form-input" id="renameNewName">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Commit Message</label>
+                <input type="text" class="form-input" id="renameCommitMessage" value="Rename">
+            </div>
+            
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('renameModal')">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-primary" onclick="confirmRename()">
+                    <i class="fas fa-check"></i>
+                    Rename
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    Upload Files
+                </h3>
+                <button class="modal-close" onclick="closeModal('uploadModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <p>Drag & drop files here or click to browse</p>
+                <div class="upload-hint">Maximum file size: 100MB</div>
+                <input type="file" id="fileInput" multiple style="display: none;" onchange="handleFileSelect(this.files)">
+            </div>
+
+            <div id="uploadFileList" class="file-list"></div>
+
+            <div class="form-group">
+                <label class="form-label">Commit Message</label>
+                <input type="text" class="form-input" id="uploadCommitMessage" value="Upload files">
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('uploadModal')">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-success" onclick="uploadFiles()" id="uploadBtn">
+                    <i class="fas fa-upload"></i>
+                    Upload Files
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert" id="alert">
+        <div class="alert-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="alert-content">
+            <div class="alert-title" id="alertTitle"></div>
+            <div class="alert-message" id="alertMessage"></div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
