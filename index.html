@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Repository Manager</title>
+    <title>GitHub Repository Manager - Professional Code Editor</title>
     
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CodeMirror untuk editor kode profesional -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.css">
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
@@ -19,8 +27,26 @@
         <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1>GitHub Repository Manager</h1>
-                <p class="header-subtitle">Manage your GitHub repositories directly from your browser</p>
+                <div class="header-left">
+                    <h1>
+                        <i class="fas fa-code-branch"></i>
+                        GitHub Repository Manager
+                    </h1>
+                    <p class="header-subtitle">Professional code editor with advanced features</p>
+                </div>
+                <div class="header-right">
+                    <div class="theme-selector">
+                        <select id="editorTheme" class="theme-select" onchange="changeEditorTheme()">
+                            <option value="dracula">Dracula</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="material">Material</option>
+                            <option value="default">Default</option>
+                        </select>
+                    </div>
+                    <div class="header-stats">
+                        <span><i class="fas fa-database"></i> <span id="headerTotalRepos">0</span> Repos</span>
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -48,20 +74,22 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-user"></i>
-                            Owner / Username
-                        </label>
-                        <input type="text" class="form-input" id="owner" placeholder="octocat">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-book"></i>
-                            Repository Name
-                        </label>
-                        <input type="text" class="form-input" id="repo" placeholder="hello-world">
+                    <div class="form-row">
+                        <div class="form-group half">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i>
+                                Owner
+                            </label>
+                            <input type="text" class="form-input" id="owner" placeholder="octocat">
+                        </div>
+                        
+                        <div class="form-group half">
+                            <label class="form-label">
+                                <i class="fas fa-book"></i>
+                                Repository
+                            </label>
+                            <input type="text" class="form-input" id="repo" placeholder="hello-world">
+                        </div>
                     </div>
                     
                     <button class="btn btn-primary btn-block" onclick="addRepository()">
@@ -77,18 +105,23 @@
                         <span>Your Repositories</span>
                     </div>
                     
+                    <div class="repo-search">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-input" id="repoSearch" placeholder="Search repositories..." onkeyup="filterRepositories()">
+                    </div>
+                    
                     <ul class="repo-list" id="repoList"></ul>
                     
                     <div class="repo-actions-group">
-                        <button class="btn btn-sm" onclick="clearAllRepos()">
+                        <button class="btn btn-sm" onclick="clearAllRepos()" title="Clear all repositories">
                             <i class="fas fa-trash-alt"></i>
                             Clear All
                         </button>
-                        <button class="btn btn-sm" onclick="exportRepos()">
+                        <button class="btn btn-sm" onclick="exportRepos()" title="Export repositories">
                             <i class="fas fa-download"></i>
                             Export
                         </button>
-                        <button class="btn btn-sm" onclick="importRepos()">
+                        <button class="btn btn-sm" onclick="importRepos()" title="Import repositories">
                             <i class="fas fa-upload"></i>
                             Import
                         </button>
@@ -125,6 +158,28 @@
                                 </span>
                                 <span class="stat-value" id="statCurrentFolder">/</span>
                             </div>
+                            <div class="stat-item">
+                                <span class="stat-label">
+                                    <i class="fas fa-file-code"></i>
+                                    Files
+                                </span>
+                                <span class="stat-value" id="statFileCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="sidebar-section">
+                    <div class="sidebar-title">
+                        <i class="fas fa-history"></i>
+                        <span>Recent Activity</span>
+                    </div>
+                    
+                    <div class="recent-activity" id="recentActivity">
+                        <div class="empty-state small">
+                            <i class="fas fa-clock"></i>
+                            <p>No recent activity</p>
                         </div>
                     </div>
                 </div>
@@ -142,10 +197,16 @@
                         </p>
                     </div>
                     
-                    <button class="btn btn-sm" onclick="refreshContents()">
-                        <i class="fas fa-sync-alt"></i>
-                        Refresh
-                    </button>
+                    <div class="header-actions">
+                        <button class="btn btn-sm" onclick="refreshContents()" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                            Refresh
+                        </button>
+                        <button class="btn btn-sm" onclick="showSearchModal()" title="Search in files">
+                            <i class="fas fa-search"></i>
+                            Search
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Breadcrumb -->
@@ -153,30 +214,41 @@
 
                 <!-- Action Bar -->
                 <div class="action-bar">
-                    <button class="btn btn-sm" onclick="showCreateFileModal()">
-                        <i class="fas fa-file"></i>
-                        New File
-                    </button>
-                    
-                    <button class="btn btn-sm" onclick="showCreateFolderModal()">
-                        <i class="fas fa-folder"></i>
-                        New Folder
-                    </button>
-                    
-                    <button class="btn btn-sm btn-success" onclick="showUploadModal()">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        Upload Files
-                    </button>
-                    
-                    <div class="view-toggle">
-                        <button class="active" onclick="setViewMode('grid')" id="viewGridBtn">
-                            <i class="fas fa-th-large"></i>
-                            Grid
+                    <div class="action-group">
+                        <button class="btn btn-sm" onclick="showCreateFileModal()" title="Create new file">
+                            <i class="fas fa-file"></i>
+                            New File
                         </button>
-                        <button onclick="setViewMode('table')" id="viewTableBtn">
-                            <i class="fas fa-table"></i>
-                            Table
+                        
+                        <button class="btn btn-sm" onclick="showCreateFolderModal()" title="Create new folder">
+                            <i class="fas fa-folder"></i>
+                            New Folder
                         </button>
+                        
+                        <button class="btn btn-sm btn-success" onclick="showUploadModal()" title="Upload files">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            Upload Files
+                        </button>
+
+                        <button class="btn btn-sm" onclick="showZipUploadModal()" title="Upload and extract ZIP">
+                            <i class="fas fa-file-archive"></i>
+                            Upload ZIP
+                        </button>
+                    </div>
+                    
+                    <div class="action-group right">
+                        <div class="view-toggle">
+                            <button class="active" onclick="setViewMode('grid')" id="viewGridBtn" title="Grid view">
+                                <i class="fas fa-th-large"></i>
+                            </button>
+                            <button onclick="setViewMode('table')" id="viewTableBtn" title="Table view">
+                                <i class="fas fa-table"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="file-filter">
+                            <input type="text" class="form-input" id="fileSearch" placeholder="Filter files..." onkeyup="filterFiles()">
+                        </div>
                     </div>
                 </div>
 
@@ -188,25 +260,46 @@
 
     <!-- Create File Modal -->
     <div class="modal" id="createFileModal">
-        <div class="modal-content">
+        <div class="modal-content large">
             <div class="modal-header">
                 <h3>
                     <i class="fas fa-file"></i>
                     Create New File
                 </h3>
-                <button class="modal-close" onclick="closeModal('createFileModal')">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="modal-header-actions">
+                    <button class="modal-close" onclick="closeModal('createFileModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
             
             <div class="form-group">
                 <label class="form-label">File Name</label>
-                <input type="text" class="form-input" id="newFileName" placeholder="example.txt">
+                <input type="text" class="form-input" id="newFileName" placeholder="example.js" autocomplete="off">
+            </div>
+            
+            <div class="editor-toolbar">
+                <button class="btn btn-sm" onclick="insertSnippet('function')" title="Insert function">
+                    <i class="fas fa-code"></i> fn
+                </button>
+                <button class="btn btn-sm" onclick="insertSnippet('class')" title="Insert class">
+                    <i class="fas fa-cube"></i> class
+                </button>
+                <button class="btn btn-sm" onclick="insertSnippet('if')" title="Insert if statement">
+                    <i class="fas fa-question"></i> if
+                </button>
+                <button class="btn btn-sm" onclick="insertSnippet('for')" title="Insert for loop">
+                    <i class="fas fa-redo"></i> for
+                </button>
+                <span class="separator"></span>
+                <button class="btn btn-sm" onclick="formatCode()" title="Format code">
+                    <i class="fas fa-magic"></i> Format
+                </button>
             </div>
             
             <div class="form-group">
                 <label class="form-label">Content</label>
-                <textarea class="form-input" id="newFileContent" rows="8"></textarea>
+                <textarea class="form-input code-editor" id="newFileContent" rows="15"></textarea>
             </div>
             
             <div class="form-group">
@@ -215,36 +308,80 @@
             </div>
             
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('createFileModal')">
-                    <i class="fas fa-times"></i>
-                    Cancel
-                </button>
-                <button class="btn btn-primary" onclick="createFile()">
-                    <i class="fas fa-check"></i>
-                    Create File
-                </button>
+                <div class="footer-left">
+                    <span class="file-info"><i class="fas fa-info-circle"></i> Press Ctrl+Space for autocomplete</span>
+                </div>
+                <div class="footer-right">
+                    <button class="btn" onclick="closeModal('createFileModal')">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="createFile()">
+                        <i class="fas fa-check"></i>
+                        Create File
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Edit File Modal -->
     <div class="modal" id="editFileModal">
-        <div class="modal-content">
+        <div class="modal-content large">
             <div class="modal-header">
                 <h3>
                     <i class="fas fa-edit"></i>
                     Edit File
                 </h3>
-                <button class="modal-close" onclick="closeModal('editFileModal')">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="modal-header-actions">
+                    <button class="btn btn-sm" onclick="toggleSearchPanel()" title="Search (Ctrl+F)">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <button class="btn btn-sm" onclick="toggleWordWrap()" title="Toggle word wrap">
+                        <i class="fas fa-wrap-text"></i>
+                    </button>
+                    <button class="modal-close" onclick="closeModal('editFileModal')">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
             
-            <div class="info-note" id="editFilePath"></div>
+            <div class="info-note" id="editFilePath">
+                <i class="fas fa-file"></i>
+                <span></span>
+            </div>
+
+            <div class="search-panel" id="searchPanel" style="display: none;">
+                <div class="search-input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-input" id="searchInput" placeholder="Search..." onkeyup="searchInEditor()">
+                    <button class="btn btn-sm" onclick="findNext()" title="Next (Enter)">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                    <button class="btn btn-sm" onclick="findPrev()" title="Previous (Shift+Enter)">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button class="btn btn-sm" onclick="replaceInEditor()" title="Replace">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                </div>
+                <div class="search-input-group" id="replacePanel" style="display: none;">
+                    <i class="fas fa-pencil-alt"></i>
+                    <input type="text" class="form-input" id="replaceInput" placeholder="Replace with...">
+                    <button class="btn btn-sm btn-primary" onclick="replaceAll()" title="Replace all">
+                        <i class="fas fa-check-double"></i> All
+                    </button>
+                </div>
+            </div>
             
             <div class="form-group">
-                <label class="form-label">Content</label>
-                <textarea class="form-input" id="editFileContent" rows="12"></textarea>
+                <textarea class="form-input code-editor" id="editFileContent" rows="20"></textarea>
+            </div>
+
+            <div class="editor-statusbar">
+                <span id="cursorPosition">Ln 1, Col 1</span>
+                <span id="fileSize"></span>
+                <span id="encoding">UTF-8</span>
             </div>
             
             <div class="form-group">
@@ -253,19 +390,24 @@
             </div>
             
             <div class="modal-footer">
-                <button class="btn" onclick="closeModal('editFileModal')">
-                    <i class="fas fa-times"></i>
-                    Cancel
-                </button>
-                <button class="btn btn-primary" onclick="saveFile()">
-                    <i class="fas fa-save"></i>
-                    Save Changes
-                </button>
+                <div class="footer-left">
+                    <span class="file-info"><i class="fas fa-keyboard"></i> Ctrl+F: Search | Ctrl+H: Replace</span>
+                </div>
+                <div class="footer-right">
+                    <button class="btn" onclick="closeModal('editFileModal')">
+                        <i class="fas fa-times"></i>
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary" onclick="saveFile()">
+                        <i class="fas fa-save"></i>
+                        Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Create Folder Modal -->
+       <!-- Create Folder Modal -->
     <div class="modal" id="createFolderModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -342,7 +484,7 @@
         </div>
     </div>
 
-    <!-- Upload Modal -->
+    <!-- Upload Files Modal -->
     <div class="modal" id="uploadModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -364,6 +506,13 @@
 
             <div id="uploadFileList" class="file-list"></div>
 
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <span id="progressText">0%</span>
+            </div>
+
             <div class="form-group">
                 <label class="form-label">Commit Message</label>
                 <input type="text" class="form-input" id="uploadCommitMessage" value="Upload files">
@@ -382,6 +531,125 @@
         </div>
     </div>
 
+    <!-- Upload ZIP Modal -->
+    <div class="modal" id="zipUploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-file-archive"></i>
+                    Upload & Extract ZIP
+                </h3>
+                <button class="modal-close" onclick="closeModal('zipUploadModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="upload-area" id="zipUploadArea" onclick="document.getElementById('zipInput').click()">
+                <i class="fas fa-file-archive upload-icon"></i>
+                <p>Drag & drop ZIP file here or click to browse</p>
+                <div class="upload-hint">Supported formats: .zip, Maximum size: 100MB</div>
+                <input type="file" id="zipInput" accept=".zip" style="display: none;" onchange="handleZipSelect(this.files[0])">
+            </div>
+
+            <div id="zipFileInfo" class="file-info-box" style="display: none;">
+                <div class="file-info-header">
+                    <i class="fas fa-file-archive"></i>
+                    <span id="zipFileName"></span>
+                </div>
+                <div class="file-info-details">
+                    <span><i class="fas fa-folder"></i> <span id="zipFolderCount">0</span> folders</span>
+                    <span><i class="fas fa-file"></i> <span id="zipFileCount">0</span> files</span>
+                    <span><i class="fas fa-weight-hanging"></i> <span id="zipSize"></span></span>
+                </div>
+            </div>
+
+            <div class="extract-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="extractSubfolders" checked>
+                    <span>Preserve folder structure</span>
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="overwriteExisting">
+                    <span>Overwrite existing files</span>
+                </label>
+            </div>
+
+            <div class="upload-progress" id="zipProgress" style="display: none;">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="zipProgressFill" style="width: 0%"></div>
+                </div>
+                <span id="zipProgressText">0%</span>
+            </div>
+
+            <div id="extractedFileList" class="file-list" style="max-height: 150px; display: none;"></div>
+
+            <div class="form-group">
+                <label class="form-label">Commit Message</label>
+                <input type="text" class="form-input" id="zipCommitMessage" value="Extract ZIP archive">
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('zipUploadModal')">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                </button>
+                <button class="btn btn-success" onclick="extractAndUploadZip()" id="extractBtn" disabled>
+                    <i class="fas fa-file-archive"></i>
+                    Extract & Upload
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search in Repository Modal -->
+    <div class="modal" id="searchModal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>
+                    <i class="fas fa-search"></i>
+                    Search in Repository
+                </h3>
+                <button class="modal-close" onclick="closeModal('searchModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" class="form-input" id="globalSearchInput" placeholder="Search in files..." onkeyup="debounceSearch()">
+                </div>
+                
+                <div class="search-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="searchCaseSensitive">
+                        <span>Case sensitive</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="searchWholeWord">
+                        <span>Whole word</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="searchRegex">
+                        <span>Regex</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="search-results" id="searchResults">
+                <div class="search-stats" id="searchStats"></div>
+                <div class="results-list" id="resultsList"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('searchModal')">
+                    <i class="fas fa-times"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Alert -->
     <div class="alert" id="alert">
         <div class="alert-icon">
@@ -391,15 +659,39 @@
             <div class="alert-title" id="alertTitle"></div>
             <div class="alert-message" id="alertMessage"></div>
         </div>
+        <button class="alert-close" onclick="hideAlert()">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 
     <!-- Loading -->
     <div class="loading" id="loading">
         <div class="spinner"></div>
         <p>Loading...</p>
+        <p class="loading-subtitle" id="loadingMessage"></p>
     </div>
 
     <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/php/php.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/sql/sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/search.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/search/searchcursor.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/dialog/dialog.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/brace-fold.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/comment-fold.min.js"></script>
+    
     <script src="script.js"></script>
 </body>
-</html>
+                    </html>
